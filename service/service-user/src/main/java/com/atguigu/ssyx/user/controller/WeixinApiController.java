@@ -1,6 +1,7 @@
 package com.atguigu.ssyx.user.controller;
 
 import com.alibaba.fastjson.JSONObject;
+import com.atguigu.ssyx.common.auth.AuthContextHolder;
 import com.atguigu.ssyx.common.constant.RedisConst;
 import com.atguigu.ssyx.common.exception.SsyxException;
 import com.atguigu.ssyx.common.result.Result;
@@ -14,14 +15,11 @@ import com.atguigu.ssyx.user.utils.HttpClientUtils;
 import com.atguigu.ssyx.vo.user.LeaderAddressVo;
 import com.atguigu.ssyx.vo.user.UserLoginVo;
 import io.swagger.annotations.ApiOperation;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.ObjectUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -29,10 +27,10 @@ import java.util.concurrent.TimeUnit;
 @RequestMapping("/api/user/weixin")
 public class WeixinApiController {
 
-    @Resource
+    @Autowired
     private UserService userService;
 
-    @Resource
+    @Autowired
     private RedisTemplate redisTemplate;
 
     //用户微信授权登录
@@ -89,7 +87,7 @@ public class WeixinApiController {
         UserLoginVo userLoginVo = userService.getUserLoginVo(user.getId());
         //param：key value 有效时间 时间单位
         redisTemplate.opsForValue()
-                .set(RedisConst.USER_KEY_PREFIX+user.getId(),userLoginVo,RedisConst.USERKEY_TIMEOUT, TimeUnit.DAYS);
+                .set(RedisConst.USER_KEY_PREFIX + user.getId(),userLoginVo,RedisConst.USERKEY_TIMEOUT, TimeUnit.DAYS);
 
         //7 需要数据封装到map返回
         HashMap<String, Object> map = new HashMap<>();
@@ -98,5 +96,18 @@ public class WeixinApiController {
         map.put("leaderAddressVo",leaderAddressVo);
 
         return Result.ok(map);
+    }
+
+    @PostMapping("/auth/updateUser")
+    @ApiOperation(value = "更新用户昵称与头像")
+    public Result updateUser(@RequestBody User user) {
+        //获取当前登录用户id
+        User user1 = userService.getById(AuthContextHolder.getUserId());
+        //把昵称更新为微信用户
+        //把表情替换成*
+        user1.setNickName(user.getNickName().replaceAll("[ue000-uefff]","*"));
+        user1.setPhotoUrl(user.getPhotoUrl());
+        userService.updateById(user1);
+        return Result.ok(null);
     }
 }

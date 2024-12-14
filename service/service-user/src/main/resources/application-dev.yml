@@ -22,7 +22,7 @@ jackson:
 
 redis:
   host: localhost
-  port: 6379
+  port: d
   database: 0
   timeout: 1800000
   password:

@@ -25,7 +25,9 @@ public class JwtHelper {
     }
 
     public static Long getUserId(String token) {
-        if(StringUtils.isEmpty(token)) return null;
+        if(StringUtils.isEmpty(token)) {
+            return null;
+        }
 
         Jws<Claims> claimsJws = Jwts.parser().setSigningKey(tokenSignKey).parseClaimsJws(token);
         Claims claims = claimsJws.getBody();
@@ -35,7 +37,9 @@ public class JwtHelper {
     }
 
     public static String getUserName(String token) {
-        if(StringUtils.isEmpty(token)) return "";
+        if(StringUtils.isEmpty(token)) {
+            return "";
+        }
 
         Jws<Claims> claimsJws = Jwts.parser().setSigningKey(tokenSignKey).parseClaimsJws(token);
         Claims claims = claimsJws.getBody();
@@ -52,4 +56,6 @@ public class JwtHelper {
         System.out.println(JwtHelper.getUserId(token));
         System.out.println(JwtHelper.getUserName(token));
     }
+
+
 }
