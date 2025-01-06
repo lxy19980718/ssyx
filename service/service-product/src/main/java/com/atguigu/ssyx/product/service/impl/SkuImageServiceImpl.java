@@ -31,4 +31,9 @@ public class SkuImageServiceImpl extends ServiceImpl<SkuImageMapper, SkuImage> i
     public void updateSkuImageBySkuId(SkuInfo skuInfo) {
         this.update(Wrappers.<SkuImage>lambdaUpdate().eq(SkuImage::getSkuId,skuInfo.getId()));
     }
+
+    @Override
+    public List<SkuImage> getImageListBySkuId(Long id) {
+        return baseMapper.selectList(Wrappers.<SkuImage>lambdaQuery().eq(SkuImage::getSkuId,id));
+    }
 }

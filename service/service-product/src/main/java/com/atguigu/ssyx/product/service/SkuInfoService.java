@@ -20,6 +20,8 @@ import java.util.List;
  */
 public interface SkuInfoService extends IService<SkuInfo> {
 
+    List<SkuInfo> findNewPersonSkuInfoList();
+
     IPage<SkuInfo> seletPageSkuInfo(Page<SkuInfo> pageParam, SkuInfoQueryVo skuInfoQueryVo);
 
     void saveSkuInfo(SkuInfoVo skuInfoVo);
@@ -37,4 +39,6 @@ public interface SkuInfoService extends IService<SkuInfo> {
     List<SkuInfo> getBySkuIds(List<Long> skuIds);
 
     List<SkuInfo> findSkuInfoByKeyword(String keyword);
+
+    SkuInfoVo getSkuInfoVo(Long skuId);
 }

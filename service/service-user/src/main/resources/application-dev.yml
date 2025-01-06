@@ -2,6 +2,7 @@ server:
   port: 8206
 
 mybatis-plus:
+#  指定一个包路径，框架或工具将会在这个包中扫描并处理所有的 枚举类型（enum）。
   type-enums-package: com.atguigu.ssyx.enums
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
@@ -36,6 +37,7 @@ redis:
 wx:
   open:
     # 小程序微信公众平台appId
-    app_id: wxcc651fcbab275e33
+#    app_id: wxcc651fcbab275e33
+    app_id: wx6ad2987683c11f61
     # 小程序微信公众平台api秘钥
     app_secret: 5f353399a2eae7ff6ceda383e924c5f6

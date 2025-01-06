@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.atguigu.ssyx.activity.mapper.ActivityInfoMapper">
+<!--    自定义返回结果-->
+    <resultMap id="ActivityRuleMap" type="com.atguigu.ssyx.model.activity.ActivityRule" autoMapping="true">
+
+    </resultMap>
     <select id="selectSkuIdListExist" resultType="java.lang.Long">
         SELECT sku.sku_id FROM `activity_info` info
         INNER JOIN activity_sku sku
@@ -14,5 +18,30 @@
             </if>
                 and NOW() BETWEEN info.start_time AND info.end_time
         </where>
+    </select>
+
+<!--    根据skuId进行查询，查询sku对应活动里面的规则列表-->
+    <select id="findActivityRule" resultMap="ActivityRuleMap">
+        select
+            info.activity_type as activityType,
+            rule.id,
+            rule.activity_id,
+            rule.condition_amount,
+            rule.condition_num,
+            rule.benefit_amount,
+            rule.benefit_discount
+        from
+            activity_info info
+                INNER JOIN
+            activity_sku sku
+            on info.id = sku.sku_id
+                INNER JOIN
+            activity_rule rule
+            on sku.activity_id= rule.activity_id
+        WHERE
+            sku.sku_id = #{skuId}
+          and NOW() BETWEEN info.start_time AND info.end_time
+        ORDER BY rule.condition_amount desc
+
     </select>
 </mapper>

@@ -20,4 +20,6 @@ public interface SkuImageService extends IService<SkuImage> {
     List<SkuImage> getSkuImage(Long id);
 
     void updateSkuImageBySkuId(SkuInfo skuInfo);
+
+    List<SkuImage> getImageListBySkuId(Long id);
 }

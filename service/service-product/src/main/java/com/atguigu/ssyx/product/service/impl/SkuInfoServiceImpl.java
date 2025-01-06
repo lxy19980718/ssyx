@@ -26,6 +26,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -49,6 +50,26 @@ public class SkuInfoServiceImpl extends ServiceImpl<SkuInfoMapper, SkuInfo> impl
 
     @Autowired
     private RabbitService rabbitService;
+
+    @Override
+    public List<SkuInfo> findNewPersonSkuInfoList() {
+        //条件1：is_new_person为1
+        //条件2：publish_status为1 上架
+        //条件3：只选其中3个
+
+        //第一种方式
+        //return this.list(Wrappers.<SkuInfo>lambdaQuery()
+        //                .eq(SkuInfo::getIsNewPerson,1)
+        //                .eq(SkuInfo::getPublishStatus,1)
+        //                .orderByDesc(SkuInfo::getStock))
+        //        .stream().limit(3).collect(Collectors.toList());
+
+        return this.list(Wrappers.<SkuInfo>lambdaQuery()
+                        .eq(SkuInfo::getIsNewPerson,1)
+                        .eq(SkuInfo::getPublishStatus,1)
+                        .orderByDesc(SkuInfo::getStock)
+                        .last("limit 3")).stream().collect(Collectors.toList());
+    }
 
     @Override
     public IPage<SkuInfo> seletPageSkuInfo(Page<SkuInfo> pageParam, SkuInfoQueryVo skuInfoQueryVo) {
@@ -187,5 +208,29 @@ public class SkuInfoServiceImpl extends ServiceImpl<SkuInfoMapper, SkuInfo> impl
     @Override
     public List<SkuInfo> findSkuInfoByKeyword(String keyword) {
         return baseMapper.selectList(Wrappers.<SkuInfo>lambdaQuery().like(SkuInfo::getSkuName,keyword));
+    }
+
+    @Override
+    public SkuInfoVo getSkuInfoVo(Long skuId) {
+        SkuInfoVo skuInfoVo = new SkuInfoVo();
+        // skuId查询skuInfo
+        SkuInfo skuInfo = baseMapper.selectById(skuId);
+
+        //skuId查询sku图片
+        List<SkuImage> imageList = skuImageService.getImageListBySkuId(skuId);
+
+        //skuId查询sku宣传海报
+        List<SkuPoster> skuPosterList = skuPosterService.getSkuPoster(skuId);
+
+
+        //skuId查询sku属性
+        List<SkuAttrValue> skuAttrValueList = skuAttrValueService.getSkuAttrValue(skuId);
+
+        BeanUtils.copyProperties(skuInfo,skuInfoVo);
+        skuInfoVo.setSkuImagesList(imageList);
+        skuInfoVo.setSkuPosterList(skuPosterList);
+        skuInfoVo.setSkuAttrValueList(skuAttrValueList);
+
+        return skuInfoVo;
     }
 }

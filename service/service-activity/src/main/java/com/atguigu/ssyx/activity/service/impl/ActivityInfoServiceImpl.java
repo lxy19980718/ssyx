@@ -4,11 +4,13 @@ import com.atguigu.ssyx.activity.mapper.ActivityInfoMapper;
 import com.atguigu.ssyx.activity.mapper.ActivityRuleMapper;
 import com.atguigu.ssyx.activity.mapper.ActivitySkuMapper;
 import com.atguigu.ssyx.activity.service.ActivityInfoService;
+import com.atguigu.ssyx.activity.service.CouponInfoService;
 import com.atguigu.ssyx.client.product.ProductFeignClient;
 import com.atguigu.ssyx.enums.ActivityType;
 import com.atguigu.ssyx.model.activity.ActivityInfo;
 import com.atguigu.ssyx.model.activity.ActivityRule;
 import com.atguigu.ssyx.model.activity.ActivitySku;
+import com.atguigu.ssyx.model.activity.CouponInfo;
 import com.atguigu.ssyx.model.product.SkuInfo;
 import com.atguigu.ssyx.vo.activity.ActivityRuleVo;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -17,6 +19,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -40,6 +43,9 @@ public class ActivityInfoServiceImpl extends ServiceImpl<ActivityInfoMapper, Act
 
     @Autowired
     private ProductFeignClient productFeignClient;
+
+    @Autowired
+    private CouponInfoService couponInfoService;
 
     @Override
     public IPage<ActivityInfo> selectPageActivityInfo(Page<ActivityInfo> pageParam) {
@@ -101,5 +107,63 @@ public class ActivityInfoServiceImpl extends ServiceImpl<ActivityInfoMapper, Act
         List<Long> existSkuIdList = baseMapper.selectSkuIdListExist(ids);
         List<SkuInfo> result = skuInfoList.stream().filter(item->!existSkuIdList.contains(item.getId())).collect(Collectors.toList());
         return result;
+    }
+
+    @Override
+    public Map<Long, List<String>> findActivity(List<Long> skuIdList) {
+        Map<Long,List<String>> map = new HashMap<>();
+        //skuIdList遍历得到每个skuId
+        skuIdList.forEach(skuId -> {
+            //根据skuId进行查询，查询sku对应的活动列表
+            List<ActivityRule> activityRuleList = baseMapper.findActivityRule(skuId);
+
+            //封装
+            if(!CollectionUtils.isEmpty(activityRuleList)){
+                List<String> rules = new ArrayList<>();
+                //把规则名称处理一下
+                for(ActivityRule activityRule:activityRuleList){
+                    rules.add(this.getRuleDesc(activityRule));
+                }
+                map.put(skuId,rules);
+            }
+        });
+        return map;
+    }
+
+    @Override
+    public Map<String, Object> findActivityAndCoupon(Long skuId, Long userId) {
+        //1、根据skuid获取sku营销活动，一个活动有多个规则
+        Map<String, Object> activityRuleList = this.findActivityRuleList(skuId);
+
+        //2、根据skuId+userId查询优惠券信息
+        List<CouponInfo> couponInfoList = couponInfoService.findCouponInfoList(skuId,userId);
+
+        //3、封装
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("couponInfoList",couponInfoList);
+        map.putAll(activityRuleList);
+        return map;
+    }
+
+    //构造规则名称的方法
+    private String getRuleDesc(ActivityRule activityRule) {
+        ActivityType activityType = activityRule.getActivityType();
+        StringBuffer ruleDesc = new StringBuffer();
+        if (activityType == ActivityType.FULL_REDUCTION) {
+            ruleDesc
+                    .append("满")
+                    .append(activityRule.getConditionAmount())
+                    .append("元减")
+                    .append(activityRule.getBenefitAmount())
+                    .append("元");
+        } else {
+            ruleDesc
+                    .append("满")
+                    .append(activityRule.getConditionNum())
+                    .append("元打")
+                    .append(activityRule.getBenefitDiscount())
+                    .append("折");
+        }
+        return ruleDesc.toString();
     }
 }
