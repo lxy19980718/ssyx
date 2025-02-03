@@ -26,9 +26,10 @@ public class CouponRange extends BaseEntity {
 	@TableField("coupon_id")
 	private Long couponId;
 
-	@ApiModelProperty(value = "范围类型 1、商品(spuid) 2、品类(三级分类id) 3、品牌")
+	@ApiModelProperty(value = "范围类型 1、商品(skuid) 2、品类(三级分类id) 3、品牌")
 	@TableField("range_type")
 	private CouponRangeType rangeType;
+
 
 	@ApiModelProperty(value = "rangeId")
 	@TableField("range_id")

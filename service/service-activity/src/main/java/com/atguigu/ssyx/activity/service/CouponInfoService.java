@@ -2,6 +2,7 @@ package com.atguigu.ssyx.activity.service;
 
 
 import com.atguigu.ssyx.model.activity.CouponInfo;
+import com.atguigu.ssyx.model.order.CartInfo;
 import com.atguigu.ssyx.vo.activity.CouponRuleVo;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -36,4 +37,6 @@ public interface CouponInfoService extends IService<CouponInfo> {
     Boolean saveCouponRule(CouponRuleVo couponRuleVo);
 
     List<CouponInfo> findCouponInfoList(Long skuId, Long userId);
+
+    List<CouponInfo> findCartCouponInfo(List<CartInfo> cartInfoList, Long userId);
 }

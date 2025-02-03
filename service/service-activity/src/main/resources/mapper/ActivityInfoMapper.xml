@@ -16,7 +16,7 @@
         inner join activity_sku sku on info.id = sku.activity_id
         <where>
             and sku.sku_id in
-            <foreach collection="skuIdList" item="item" open="(" close=")" separator=",">
+            <foreach collection="skuIds" item="item" open="(" close=")" separator=",">
                 #{item}
             </foreach>
         </where>
@@ -50,7 +50,10 @@
     <select id="findActivityRule" resultMap="ActivityRuleMap">
         select
             info.activity_type as activityType,
-            rule.id,rule.activity_id,rule.condition_amount,rule.condition_num,rule.benefit_amount,rule.benefit_discount
+            rule.id,rule.activity_id,
+            rule.condition_amount,
+            rule.condition_num,
+            rule.benefit_amount,rule.benefit_discount
         from activity_info info
                  inner join activity_sku sku on info.id=sku.activity_id
                  inner join activity_rule rule on info.id = rule.activity_id

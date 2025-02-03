@@ -27,4 +27,26 @@
         order by info.amount desc
     </select>
 
+    <!--根据userId查询优惠卷列表-->
+    <select id="selectCouponInfoListByUserId" resultMap="CouponInfoMap">
+        SELECT
+            info.id,
+            info.coupon_type,
+            info.coupon_name,
+            info.amount,
+            info.condition_amount,
+            info.start_time,
+            info.end_time,info.range_type,info.range_desc,info.publish_count,info.per_limit,info.use_count,info.receive_count,info.expire_time,info.publish_status,info.create_time,info.update_time,info.is_deleted
+        FROM coupon_use  cuse
+        left join coupon_info info
+        on cuse.coupon_id = info.id
+        <where>
+            now() <![CDATA[<]]> info.expire_time
+            <if test="userId != '' and userId != null">
+                and cuse.user_id = #{userId}
+            </if>
+        </where>
+        ORDER BY info.amount desc
+    </select>
+
 </mapper>
