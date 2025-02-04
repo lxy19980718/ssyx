@@ -1,6 +1,8 @@
 package com.atguigu.ssyx.activity.client;
 
+import com.atguigu.ssyx.model.activity.CouponInfo;
 import com.atguigu.ssyx.model.order.CartInfo;
+import com.atguigu.ssyx.vo.order.CartInfoVo;
 import com.atguigu.ssyx.vo.order.OrderConfirmVo;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -26,4 +28,17 @@ public interface ActivityFeignClient {
     @ApiOperation(value = "查询带优惠卷的购物车")
     @PostMapping("/api/activity/inner/activityCartList")
     OrderConfirmVo findCartActivityAndCoupon(List<CartInfo> cartInfoList, Long userId);
+
+    /**
+     * 获取优惠券范围对应的购物车列表
+     *
+     * @param cartInfoList
+     * @param couponId
+     * @return
+     */
+    @PostMapping(value = "/api/activity/inner/findRangeSkuIdList/{couponId}")
+    CouponInfo findRangeSkuIdList(@RequestBody List<CartInfo> cartInfoList, @PathVariable("couponId") Long couponId);
+
+    @PostMapping("/api/activity/inner/findCartActivityList")
+    public List<CartInfoVo> findCartActivityList(@RequestBody List<CartInfo> cartInfoList);
 }

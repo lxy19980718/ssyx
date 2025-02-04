@@ -1,7 +1,10 @@
 package com.atguigu.ssyx.activity.api;
 
 import com.atguigu.ssyx.activity.service.ActivityInfoService;
+import com.atguigu.ssyx.activity.service.CouponInfoService;
+import com.atguigu.ssyx.model.activity.CouponInfo;
 import com.atguigu.ssyx.model.order.CartInfo;
+import com.atguigu.ssyx.vo.order.CartInfoVo;
 import com.atguigu.ssyx.vo.order.OrderConfirmVo;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +19,9 @@ public class ActivityInfoApiController {
 
     @Autowired
     private ActivityInfoService activityInfoService;
+
+    @Autowired
+    private CouponInfoService couponInfoService;
 
     @ApiOperation(value = "根据skuIds获取促销信息")
     @PostMapping("inner/findActivity")
@@ -34,4 +40,15 @@ public class ActivityInfoApiController {
     public OrderConfirmVo findCartActivityAndCoupon(@RequestBody List<CartInfo> cartInfoList,@PathVariable Long userId){
         return activityInfoService.findCartActivityAndCoupon(cartInfoList,userId);
     }
+
+    @PostMapping("inner/findCartActivityList")
+    public List<CartInfoVo> findCartActivityList(@RequestBody List<CartInfo> cartInfoList){
+        return activityInfoService.findCartActivityList(cartInfoList);
+    }
+
+    //获取购物车对应优惠卷的部分
+    @PostMapping(value = "inner/findRangeSkuIdList/{couponId}")
+    CouponInfo findRangeSkuIdList(@RequestBody List<CartInfo> cartInfoList, @PathVariable("couponId") Long couponId){
+        return couponInfoService.findRangeSkuIdList(cartInfoList,couponId);
+    };
 }

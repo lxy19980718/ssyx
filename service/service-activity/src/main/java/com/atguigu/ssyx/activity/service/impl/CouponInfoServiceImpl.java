@@ -176,6 +176,23 @@ public class CouponInfoServiceImpl extends ServiceImpl<CouponInfoMapper, CouponI
         return couponInfoList;
     }
 
+    @Override
+    public CouponInfo findRangeSkuIdList(List<CartInfo> cartInfoList, Long couponId) {
+        //根据优惠卷id查询基本信息
+        CouponInfo couponInfo = baseMapper.selectById(couponId);
+        if(couponInfo == null){
+            return null;
+        }
+        List<CouponRange> couponRanges = couponRangeMapper.selectList(Wrappers.<CouponRange>lambdaQuery().eq(CouponRange::getCouponId, couponId));
+
+        //对应的sku信息
+        Map<Long, List<Long>> couponIdToSkuIdMap = this.findCouponIdToSkuIdMap(cartInfoList, couponRanges);
+        couponIdToSkuIdMap.values().forEach(skuIds -> {
+            couponInfo.setSkuIdList(skuIds);
+        });
+        return couponInfo;
+    }
+
     private BigDecimal computeTotalAmount(List<CartInfo> cartInfoList) {
         BigDecimal total = new BigDecimal("0");
         for (CartInfo cartInfo:cartInfoList) {

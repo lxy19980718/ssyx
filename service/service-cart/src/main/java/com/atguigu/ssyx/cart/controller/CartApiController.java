@@ -24,6 +24,32 @@ public class CartApiController {
     @Autowired
     private ActivityFeignClient activityFeignClent;
 
+    //记录skuId是否选中
+    @GetMapping("checkCart/{skuId}/{isChecked}")
+    public Result checkCart(@PathVariable Long skuId,@PathVariable Integer isChecked){
+        //获取用户Id
+        Long userId = AuthContextHolder.getUserId();
+        cartInfoService.checkCart(userId,skuId,isChecked);
+        return Result.ok(null);
+    }
+
+    //一键全选
+    @GetMapping("checkAllCart/{isChecked}")
+    public Result checkAllCart(@PathVariable Integer isChecked){
+        Long userId = AuthContextHolder.getUserId();
+        cartInfoService.checkAllCart(userId,isChecked);
+        return Result.ok(null);
+    }
+
+    //批量选中
+    @PostMapping("batchCheckCart/{isChecked}")
+    public Result batchCheckCart(@RequestBody List<Long> skuIdList,@PathVariable Integer isChecked){
+        Long userId = AuthContextHolder.getUserId();
+        cartInfoService.batchCheckCart(userId,skuIdList,isChecked);
+        return Result.ok(null);
+    }
+
+
     //购物车列表
     @GetMapping("cartList")
     public Result cartList(HttpServletRequest request){
@@ -75,5 +101,11 @@ public class CartApiController {
 
         OrderConfirmVo orderConfirmVo = activityFeignClent.findCartActivityAndCoupon(cartInfoList, userId);
         return Result.ok(orderConfirmVo);
+    }
+
+    //获取当前用户购物车选中购物项
+    @GetMapping("inner/getCartCheckedList/{userId")
+    public List<CartInfo> getCartCheckedList(@PathVariable  Long userId) {
+        return cartInfoService.getCartCheckedList(userId);
     }
 }

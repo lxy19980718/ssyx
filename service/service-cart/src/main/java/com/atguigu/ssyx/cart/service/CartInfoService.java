@@ -14,4 +14,12 @@ public interface CartInfoService {
     void batchDeleteCart(Long userId, List<Long> skuIds);
 
     List<CartInfo> cartList(Long userId);
+
+    void checkCart(Long userId, Long skuId, Integer isChecked);
+
+    void checkAllCart(Long userId, Integer isChecked);
+
+    void batchCheckCart(Long userId, List<Long> skuIdList, Integer isChecked);
+
+    List<CartInfo> getCartCheckedList(Long userId);
 }

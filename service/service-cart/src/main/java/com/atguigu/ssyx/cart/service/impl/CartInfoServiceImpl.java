@@ -14,10 +14,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -97,9 +94,6 @@ public class CartInfoServiceImpl implements CartInfoService {
 
         //6 设置过期时间
         this.setCartKeyExpire(cartKey);
-
-
-
     }
 
     @Override
@@ -143,6 +137,59 @@ public class CartInfoServiceImpl implements CartInfoService {
             cartInfoList.stream().sorted(Comparator.comparing(CartInfo::getCreateTime).reversed()).collect(Collectors.toList());
         }
         return cartInfoList;
+    }
+
+    @Override
+    public void checkCart(Long userId, Long skuId, Integer isChecked) {
+        //获取到redis的key
+        String cartKey = this.getCartKey(userId);
+
+        //泛型是存储在redis中的hash类型 结构是 userId skuId cartInfo
+        BoundHashOperations<String,String,CartInfo> boundHashOperations = redisTemplate.boundHashOps(cartKey);
+        CartInfo cartInfo = boundHashOperations.get(skuId.toString());
+        if(cartInfo != null){
+            cartInfo.setIsChecked(isChecked);
+        }
+        //更新
+        boundHashOperations.put(skuId.toString(),cartInfo);
+        //设置key的过期时间
+        this.setCartKeyExpire(cartKey);
+    }
+
+    @Override
+    public void checkAllCart(Long userId, Integer isChecked) {
+        String cartKey = this.getCartKey(userId);
+        BoundHashOperations<String,String,CartInfo> boundHashOperations = redisTemplate.boundHashOps(cartKey);
+        List<CartInfo> cartInfoList = boundHashOperations.values();
+        Map<String, CartInfo> map = new HashMap<>();
+        cartInfoList.forEach(cartInfo -> {
+            cartInfo.setIsChecked(isChecked);
+            map.put(cartInfo.getSkuId().toString(),cartInfo);
+        });
+        boundHashOperations.putAll(map);
+
+        this.setCartKeyExpire(cartKey);
+    }
+
+    @Override
+    public void batchCheckCart(Long userId, List<Long> skuIdList, Integer isChecked) {
+        String cartKey = this.getCartKey(userId);
+        BoundHashOperations<String,String,CartInfo> boundHashOperations = redisTemplate.boundHashOps(cartKey);
+        skuIdList.forEach(skuId -> {
+            CartInfo cartInfo = boundHashOperations.get(skuId);
+            cartInfo.setIsChecked(isChecked);
+            boundHashOperations.put(cartInfo.getSkuId().toString(),cartInfo);
+        });
+        this.setCartKeyExpire(cartKey);
+    }
+
+    @Override
+    public List<CartInfo> getCartCheckedList(Long userId) {
+        String cartKey = this.getCartKey(userId);
+        BoundHashOperations<String,String,CartInfo> boundHashOperations = redisTemplate.boundHashOps(cartKey);
+        List<CartInfo> cartInfoList = boundHashOperations.values();
+        List<CartInfo> cartInfoListChecked = cartInfoList.stream().filter(cartInfo -> cartInfo.getIsChecked().intValue() == 1).collect(Collectors.toList());
+        return cartInfoListChecked;
     }
 
     //返回购物车在redis的key

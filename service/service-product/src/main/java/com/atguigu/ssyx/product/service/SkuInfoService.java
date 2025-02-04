@@ -4,6 +4,7 @@ package com.atguigu.ssyx.product.service;
 import com.atguigu.ssyx.model.product.SkuInfo;
 import com.atguigu.ssyx.vo.product.SkuInfoQueryVo;
 import com.atguigu.ssyx.vo.product.SkuInfoVo;
+import com.atguigu.ssyx.vo.product.SkuStockLockVo;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -41,4 +42,6 @@ public interface SkuInfoService extends IService<SkuInfo> {
     List<SkuInfo> findSkuInfoByKeyword(String keyword);
 
     SkuInfoVo getSkuInfoVo(Long skuId);
+
+    Boolean checkAndLock(List<SkuStockLockVo> skuStockLockVoList, String orderNo);
 }
