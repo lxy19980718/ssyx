@@ -51,4 +51,10 @@ public class ActivityInfoApiController {
     CouponInfo findRangeSkuIdList(@RequestBody List<CartInfo> cartInfoList, @PathVariable("couponId") Long couponId){
         return couponInfoService.findRangeSkuIdList(cartInfoList,couponId);
     };
+
+    @GetMapping("inner/updateCouponInfoUseStatus/{couponId}/{userId}/{orderInfoId}")
+    public Boolean updateCouponInfoUseStatus(@PathVariable Long couponId,@PathVariable Long userId,@PathVariable Long orderInfoId){
+        couponInfoService.updateCouponInfoUseStatus(couponId,userId,orderInfoId);
+        return Boolean.TRUE;
+    };
 }

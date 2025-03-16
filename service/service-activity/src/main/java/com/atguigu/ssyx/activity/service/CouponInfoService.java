@@ -22,6 +22,7 @@ import java.util.Map;
 public interface CouponInfoService extends IService<CouponInfo> {
 
 
+   Boolean updateCouponInfoUseStatus(Long couponId, Long userId, Long orderInfoId);
 
     /**
      * 优惠卷分页查询

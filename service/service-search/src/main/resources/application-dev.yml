@@ -19,13 +19,13 @@ spring:
     port: 5672
     username: lxy
     password: 123456
-    publisher-confirm-type: CORRELATED
+    publisher-confirm-type: CORRELATED #发布确认模式，消息是否
     publisher-returns: true
     listener:
       simple:
         prefetch: 1
         concurrency: 3
-        acknowledge-mode: manual
+        acknowledge-mode: manual #消费端手动确认，消息是否被成功发送到交换机
   redis:
     host: localhost
     port: 6379

@@ -40,5 +40,9 @@ public interface ActivityFeignClient {
     CouponInfo findRangeSkuIdList(@RequestBody List<CartInfo> cartInfoList, @PathVariable("couponId") Long couponId);
 
     @PostMapping("/api/activity/inner/findCartActivityList")
-    public List<CartInfoVo> findCartActivityList(@RequestBody List<CartInfo> cartInfoList);
+    List<CartInfoVo> findCartActivityList(@RequestBody List<CartInfo> cartInfoList);
+
+    //更新优惠卷的使用状态
+    @GetMapping("/api/activity/inner/updateCouponInfoUseStatus/{couponId}/{userId}/{orderInfoId}")
+    Boolean updateCouponInfoUseStatus(@PathVariable Long couponId,@PathVariable Long userId,@PathVariable Long orderInfoId);
 }

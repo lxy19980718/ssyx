@@ -3,11 +3,14 @@ package com.atguigu.ssyx.activity.service.impl;
 
 import com.atguigu.ssyx.activity.mapper.CouponInfoMapper;
 import com.atguigu.ssyx.activity.mapper.CouponRangeMapper;
+import com.atguigu.ssyx.activity.mapper.CouponUseMapper;
 import com.atguigu.ssyx.activity.service.CouponInfoService;
 import com.atguigu.ssyx.client.product.ProductFeignClient;
 import com.atguigu.ssyx.enums.CouponRangeType;
+import com.atguigu.ssyx.enums.CouponStatus;
 import com.atguigu.ssyx.model.activity.CouponInfo;
 import com.atguigu.ssyx.model.activity.CouponRange;
+import com.atguigu.ssyx.model.activity.CouponUse;
 import com.atguigu.ssyx.model.order.CartInfo;
 import com.atguigu.ssyx.model.product.Category;
 import com.atguigu.ssyx.model.product.SkuInfo;
@@ -43,6 +46,21 @@ public class CouponInfoServiceImpl extends ServiceImpl<CouponInfoMapper, CouponI
 
     @Autowired
     private CouponRangeMapper couponRangeMapper;
+
+    @Autowired
+    private CouponUseMapper couponUseMapper;
+
+    //更新优惠卷状态
+    @Override
+    public Boolean updateCouponInfoUseStatus(Long couponId, Long userId, Long orderInfoId) {
+        CouponUse couponUse = couponUseMapper.selectOne(Wrappers.<CouponUse>lambdaQuery()
+                .eq(CouponUse::getCouponId, couponId)
+                .eq(CouponUse::getUserId, userId)
+                .eq(CouponUse::getOrderId, orderInfoId));
+        couponUse.setCouponStatus(CouponStatus.USED);
+        couponUseMapper.updateById(couponUse);
+        return Boolean.TRUE;
+    }
 
     @Override
     public IPage<CouponInfo> getCouponPage(Page pageParam) {

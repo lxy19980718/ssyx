@@ -6,10 +6,12 @@ import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerIntercept
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 
 @Configuration  //代表当前类是配置类
 @MapperScan("com.atguigu.ssyx.*.mapper")     //包扫描
+@EnableTransactionManagement  //开启事物
 public class MybatisPlusConfig {
 
     /**

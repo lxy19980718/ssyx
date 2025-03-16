@@ -9,26 +9,31 @@ import com.atguigu.ssyx.common.auth.AuthContextHolder;
 import com.atguigu.ssyx.common.constant.RedisConst;
 import com.atguigu.ssyx.common.exception.SsyxException;
 import com.atguigu.ssyx.common.result.ResultCodeEnum;
-import com.atguigu.ssyx.enums.ActivityType;
-import com.atguigu.ssyx.enums.CouponType;
-import com.atguigu.ssyx.enums.SkuType;
+import com.atguigu.ssyx.common.utils.DateUtil;
+import com.atguigu.ssyx.enums.*;
 import com.atguigu.ssyx.model.activity.ActivityRule;
 import com.atguigu.ssyx.model.activity.CouponInfo;
 import com.atguigu.ssyx.model.order.CartInfo;
 import com.atguigu.ssyx.model.order.OrderInfo;
 import com.atguigu.ssyx.model.order.OrderItem;
+import com.atguigu.ssyx.mq.constant.MqConst;
+import com.atguigu.ssyx.mq.service.RabbitService;
 import com.atguigu.ssyx.order.mapper.OrderInfoMapper;
+import com.atguigu.ssyx.order.mapper.OrderItemMapper;
 import com.atguigu.ssyx.order.service.OrderInfoService;
 import com.atguigu.ssyx.vo.order.CartInfoVo;
 import com.atguigu.ssyx.vo.order.OrderConfirmVo;
 import com.atguigu.ssyx.vo.order.OrderSubmitVo;
 import com.atguigu.ssyx.vo.product.SkuStockLockVo;
 import com.atguigu.ssyx.vo.user.LeaderAddressVo;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.BoundHashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -64,7 +69,11 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
     @Autowired
     private ProductFeignClient productFeignClient;
 
+    @Autowired
+    private RabbitService rabbitService;
 
+    @Autowired
+    private OrderItemMapper orderItemMapper;
 
     /**
      * 确认订单
@@ -150,12 +159,19 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
         //4、下单过程，像order_info和order_item中添加数据
         Long orderId = this.saveOrder(orderParamVo,cartInfoList);
 
+        //下单完成，删除购物车中的记录
+        //发送mq消息
+        rabbitService.sendMessage(MqConst.EXCHANGE_ORDER_DIRECT,MqConst.ROUTING_DELETE_CART,orderParamVo.getUserId());
+
+
+        //5、
         //返回订单id
         return orderId;
     }
 
     //下单过程，像order_info和order_item中添加数据
-    private Long saveOrder(OrderSubmitVo orderParamVo, List<CartInfo> cartInfoList) {
+    @Transactional(rollbackFor = {Exception.class})
+    public Long saveOrder(OrderSubmitVo orderParamVo, List<CartInfo> cartInfoList) {
         Long userId = AuthContextHolder.getUserId();
         if(!CollectionUtils.isEmpty(cartInfoList)){
             throw new SsyxException(ResultCodeEnum.DATA_ERROR);
@@ -205,7 +221,70 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
 
             orderItems.add(orderItem);
         }
-        return null;
+        //封装订单OrderInfo数据
+        OrderInfo orderInfo = new OrderInfo();
+        orderInfo.setUserId(userId);
+        orderInfo.setOrderNo(orderParamVo.getOrderNo());
+        orderInfo.setOrderStatus(OrderStatus.UNPAID);  //订单状态
+        orderInfo.setLeaderId(orderParamVo.getLeaderId());
+        orderInfo.setLeaderName(leaderAddressVo.getLeaderName());
+        orderInfo.setLeaderPhone(leaderAddressVo.getLeaderPhone());
+        orderInfo.setTakeName(leaderAddressVo.getTakeName());
+        orderInfo.setReceiverName(orderParamVo.getReceiverName());
+        orderInfo.setReceiverPhone(orderParamVo.getReceiverPhone());
+        orderInfo.setReceiverProvince(leaderAddressVo.getProvince());
+        orderInfo.setReceiverCity(leaderAddressVo.getCity());
+        orderInfo.setReceiverDistrict(leaderAddressVo.getDistrict());
+        orderInfo.setReceiverAddress(leaderAddressVo.getDetailAddress());
+        orderInfo.setWareId(cartInfoList.get(0).getWareId());
+        orderInfo.setProcessStatus(ProcessStatus.UNPAID);
+
+        //计算订单金额
+        BigDecimal originalTotalAmount = this.computeTotalAmount(cartInfoList);
+        BigDecimal activityAmount = activitySplitAmount.get("activity:total");
+        if(null == activityAmount) {
+            activityAmount = new BigDecimal(0);
+        }
+        BigDecimal couponAmount = couponInfoSplitAmount.get("coupon:total");
+        if(null == couponAmount) {
+            couponAmount = new BigDecimal(0);
+        }
+        BigDecimal totalAmount = originalTotalAmount.subtract(activityAmount).subtract(couponAmount);
+        //计算订单金额
+        orderInfo.setOriginalTotalAmount(originalTotalAmount);
+        orderInfo.setActivityAmount(activityAmount);
+        orderInfo.setCouponAmount(couponAmount);
+        orderInfo.setTotalAmount(totalAmount);
+
+        //计算团长佣金
+        BigDecimal profitRate = new BigDecimal("0");
+        BigDecimal commissionAmount = orderInfo.getTotalAmount().multiply(profitRate);
+        orderInfo.setCommissionAmount(commissionAmount);
+
+        baseMapper.insert(orderInfo);
+        orderItems.forEach(item-> {
+            item.setOrderId(orderInfo.getId());
+            orderItemMapper.insert(item);
+        });
+
+
+
+        //如果当前订单使用优惠卷，更新优惠卷状态
+        if(orderInfo.getCouponId() != null){
+            activityFeignClient.updateCouponInfoUseStatus(orderInfo.getCouponId(),userId,orderInfo.getId());
+        }
+
+        //下单成功，记录用户购物数量，缓存到redis中去
+        String orderSkuKey =  RedisConst.ORDER_SKU_MAP + orderParamVo.getUserId();
+        BoundHashOperations<String,String,Integer> boundHashOps = redisTemplate.boundHashOps(orderSkuKey);
+        cartInfoList.forEach(cartInfo -> {
+            if(boundHashOps.hasKey(cartInfo.getSkuId().toString())){
+                Integer orderSkuNum = boundHashOps.get(cartInfo.getSkuId().toString());
+                boundHashOps.put(cartInfo.getSkuId().toString(),orderSkuNum);
+            }
+        });
+        redisTemplate.expire(orderSkuKey, DateUtil.getCurrentExpireTimes(), TimeUnit.SECONDS);
+        return orderInfo.getId();
     }
 
     /**
@@ -215,7 +294,11 @@ public class OrderInfoServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo
      */
     @Override
     public OrderInfo getOrderInfoById(Long orderId) {
-        return null;
+        OrderInfo orderInfo = baseMapper.selectById(orderId);
+        List<OrderItem> orderItems = orderItemMapper.selectList(Wrappers.<OrderItem>lambdaQuery().eq(OrderItem::getOrderId, orderId));
+
+        orderInfo.setOrderItemList(orderItems);
+        return orderInfo;
     }
 
     private BigDecimal computeTotalAmount(List<CartInfo> cartInfoList) {

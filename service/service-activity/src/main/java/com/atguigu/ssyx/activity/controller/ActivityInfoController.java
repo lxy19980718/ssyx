@@ -89,6 +89,8 @@ public class ActivityInfoController {
         ActivityInfo activityInfo = activityInfoService.getById(id);
         activityInfo.setActivityTypeString(activityInfo.getActivityType().getComment());
         return Result.ok(activityInfo);
-    }
+  }
+
+
 }
 
